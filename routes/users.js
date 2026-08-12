@@ -1,5 +1,6 @@
 import express from "express";
 import prisma from "../lib/prisma.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -91,11 +92,17 @@ router.post("/create", async (req, res) => {
 
 
 // GET /users/:id → find user by ID
-router.get("/getid/:id", async (req, res) => {
+//protected 
+router.get("/getid/:id", requireAuth, async (req, res) => {
   const { id } = req.params;
 
   if (!id) {
     return res.status(400).json({ message: "Missing user ID in URL parameter" });
+  }
+
+  // ownership check — you can only fetch your own profile
+  if (req.user.id !== id) {
+    return res.status(403).json({ message: "Forbidden" });
   }
 
   try {

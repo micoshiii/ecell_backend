@@ -10,21 +10,25 @@ import postRoutes from "./routes/posts.js";
 import applicationRoutes from "./routes/applications.js";
 import userRoutes from "./routes/users.js";
 import pingRoute from "./routes/ping.js";
+import { requireAuth } from "./middleware/auth.js";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+// public routes
 app.use("/", pingRoute);
-app.use("/students", studentRoutes);
-app.use("/recruiters", recruiterRoutes);
-app.use("/ambassador", ambassadorRoutes);
-app.use("/posts", postRoutes);
-app.use("/applications", applicationRoutes);
-app.use("/users", userRoutes);
 app.use("/ping", pingRoute);
+app.use("/users", userRoutes); // must stay public — /users/create is hit pre-login by the signIn callback
+
+// protected routes
+app.use("/students", requireAuth, studentRoutes);
+app.use("/recruiters", requireAuth, recruiterRoutes);
+app.use("/ambassador", requireAuth, ambassadorRoutes);
+app.use("/posts", requireAuth, postRoutes);
+app.use("/applications", requireAuth, applicationRoutes);
 
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
     console.log(`Backend running at http://localhost:${PORT}`);
-});
+}); 
