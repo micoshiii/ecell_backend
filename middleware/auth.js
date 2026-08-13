@@ -16,7 +16,6 @@ export const requireAuth = async (req, res, next) => {
     }
 
     const decoded = await decode({ token, secret });
-
     if (!decoded) {
       return res.status(401).json({ message: "Invalid token" });
     }
