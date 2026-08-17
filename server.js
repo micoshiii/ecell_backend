@@ -25,8 +25,10 @@ app.use("/users", userRoutes); // must stay public — /users/create is hit pre-
 app.use("/students", requireAuth, studentRoutes);
 app.use("/recruiters", requireAuth, recruiterRoutes);
 app.use("/ambassador", requireAuth, ambassadorRoutes);
-app.use("/posts", requireAuth, postRoutes);
 app.use("/applications", requireAuth, applicationRoutes);
+
+// semi-public routes — GET / and GET /:id are public, auth is enforced per-route inside posts.js
+app.use("/posts", postRoutes);
 
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {

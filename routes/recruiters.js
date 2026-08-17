@@ -1,11 +1,18 @@
 import express from "express";
 import prisma from "../lib/prisma.js";
+import { requireAuth, requireRole } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// GET /recruiters/:id → Get recruiter by userId
+// GET /recruiters/getinfo/:id → Get recruiter by userId
+// Ownership check: you can only fetch your own profile
 router.get("/getinfo/:id", async (req, res) => {
   const { id } = req.params;
+
+  // Ownership check — the token's user ID must match the requested profile ID
+  if (req.user.id !== id) {
+    return res.status(403).json({ message: "Forbidden: you can only view your own profile" });
+  }
 
   try {
     const recruiter = await prisma.recruiter.findUnique({
@@ -26,7 +33,7 @@ router.get("/getinfo/:id", async (req, res) => {
     });
 
     if (!recruiter) {
-      return res.status(401).json({
+      return res.status(404).json({
         error: "RECRUITER_NOT_FOUND",
         message: "To access recruiter dashboard, kindly login as recruiter",
         redirectTo: "/grow-your-resume/login",
@@ -42,9 +49,16 @@ router.get("/getinfo/:id", async (req, res) => {
   }
 });
 
-// PUT /recruiters/:id → Update recruiter profile
-router.put("/update/:id", async (req, res) => {
+// PUT /recruiters/update/:id → Update recruiter profile
+// Ownership check: you can only update your own profile
+router.put("/update/:id", requireRole("RECRUITER"), async (req, res) => {
   const { id } = req.params;
+
+  // Ownership check
+  if (req.user.id !== id) {
+    return res.status(403).json({ message: "Forbidden: you can only update your own profile" });
+  }
+
   const { companyName, address, websiteUrl, phoneNumber } = req.body;
 
   try {
@@ -101,8 +115,8 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// PUT /recruiters/verify/:id → Approve a recruiter (SR team verification)
-router.put("/verify/:id" , async (req , res)=>{
+// PUT /recruiters/verify/:id → Approve a recruiter (Admin only)
+router.put("/verify/:id", requireRole("ADMIN"), async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -119,8 +133,8 @@ router.put("/verify/:id" , async (req , res)=>{
   }
 });
 
-//GET /recruiters/pending → Get all unverified recruiters
-router.get("/pending" , async (req , res)=>{
+// GET /recruiters/pending → Get all unverified recruiters (Admin only)
+router.get("/pending", requireRole("ADMIN"), async (req, res) => {
   try {
     const pendingRecruiters = await prisma.recruiter.findMany({
       where : { verified: false },

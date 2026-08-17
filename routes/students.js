@@ -1,11 +1,18 @@
 import express from "express";
 import prisma from "../lib/prisma.js";
+import { requireRole } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// GET /students/:id → fetch student by ID
+// GET /students/getinfo/:id → fetch student by userId
+// Ownership check: you can only fetch your own profile
 router.get("/getinfo/:id", async (req, res) => {
   const { id } = req.params;
+
+  // Ownership check — the token's user ID must match the requested profile ID
+  if (req.user.id !== id) {
+    return res.status(403).json({ message: "Forbidden: you can only view your own profile" });
+  }
 
   try {
     const student = await prisma.student.findUnique({
@@ -26,7 +33,7 @@ router.get("/getinfo/:id", async (req, res) => {
     });
 
     if (!student) {
-      return res.status(401).json({
+      return res.status(404).json({
         error: "STUDENT_NOT_FOUND",
         message: "To access student dashboard, kindly login as student",
         redirectTo: "/student-internship-portal/login",
@@ -40,9 +47,15 @@ router.get("/getinfo/:id", async (req, res) => {
   }
 });
 
-// PUT /students/:id → update student by ID
-router.put("/update/:id", async (req, res) => {
+// PUT /students/update/:id → update student by userId
+// Ownership check: you can only update your own profile
+router.put("/update/:id", requireRole("STUDENT"), async (req, res) => {
   const { id } = req.params;
+
+  // Ownership check
+  if (req.user.id !== id) {
+    return res.status(403).json({ message: "Forbidden: you can only update your own profile" });
+  }
   const {
     name,
     rollNo,
