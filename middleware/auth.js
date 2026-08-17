@@ -1,4 +1,4 @@
-import { decode } from "next-auth/jwt";
+import jwt from "jsonwebtoken";
 
 export const requireAuth = async (req, res, next) => {
   try {
@@ -15,7 +15,7 @@ export const requireAuth = async (req, res, next) => {
       return res.status(500).json({ message: "Server misconfiguration" });
     }
 
-    const decoded = await decode({ token, secret });
+    const decoded = jwt.verify(token, secret);
     if (!decoded) {
       return res.status(401).json({ message: "Invalid token" });
     }
